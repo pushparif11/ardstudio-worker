@@ -37,11 +37,13 @@ services: {
 ) {
 
   const body = await request.json();
-    const {
-  feature,
-  prompt,
-  imageBase64
-} = body;
+
+if (
+  !body.messages ||
+  !Array.isArray(body.messages)
+) {
+  return error("messages is required", 400);
+}
 
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
@@ -78,7 +80,12 @@ services: {
   url.pathname === "/prompt/improve"
 ) {
 
-  const body = await request.json();
+  if (
+  !body.prompt ||
+  typeof body.prompt !== "string"
+) {
+  return error("prompt is required", 400);
+}
 
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
@@ -123,15 +130,21 @@ services: {
     url.pathname === "/image/edit"  
   ) {  
 
-    let body;  
+    let body;
 
-    try {  
-      body = await request.json();  
-    } catch {  
-      return error("Invalid JSON", 400);  
-    }  
+try {
+  body = await request.json();
+} catch {
+  return error("Invalid JSON", 400);
+}
 
-    let finalPrompt = prompt;
+const {
+  feature,
+  prompt,
+  imageBase64
+} = body;
+
+let finalPrompt = prompt;
 
 switch (feature.toLowerCase()) {
 
@@ -197,13 +210,13 @@ const falResponse = await fetch(
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      prompt,
-      image_urls: [imageDataUri],
-      image_size: "auto",
-      quality: "high",
-      input_fidelity: "high",
-      sync_mode: true
-    })
+  prompt: finalPrompt,
+  image_urls: [imageDataUri],
+  image_size: "auto",
+  quality: "high",
+  input_fidelity: "high",
+  sync_mode: true
+})
   }
 );
 
@@ -256,22 +269,16 @@ return json({
   return error("Route not found", 404);  
 
 } catch (e) {
-
   console.error(e);
+
+  clearTimeout(timeout);
 
   return error(
     e?.message || "Internal Server Error",
     500
   );
-
-}  
-
-  return error(
-  e.message || "Internal Server Error",
-  500
-);
-
 }
+
 };
 
 function json(data) {
@@ -303,9 +310,12 @@ headers: {
 }
 
 function corsHeaders() {
-return {
-"Access-Control-Allow-Origin": "",
-"Access-Control-Allow-Headers": "",
-"Access-Control-Allow-Methods": "GET,POST,OPTIONS"
-};
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers":
+      "Content-Type, Authorization",
+    "Access-Control-Allow-Methods":
+      "GET, POST, OPTIONS",
+    "Access-Control-Max-Age": "86400"
+  };
 }

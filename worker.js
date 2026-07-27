@@ -86,9 +86,37 @@ if (!falResponse.ok) {
 
 const falData = await falResponse.json();
 
+let outputImage = null;
+
+if (falData.images && falData.images.length > 0) {
+  outputImage = falData.images[0].url;
+}
+
+if (!outputImage) {
+  return error("Edited image not found", 500);
+}
+
+const imageResponse = await fetch(outputImage);
+
+if (!imageResponse.ok) {
+  return error("Failed to download edited image", 500);
+}
+
+const imageBuffer = await imageResponse.arrayBuffer();
+
+const bytes = new Uint8Array(imageBuffer);
+
+let binary = "";
+
+for (const b of bytes) {
+  binary += String.fromCharCode(b);
+}
+
+const base64 = btoa(binary);
+
 return json({
   success: true,
-  fal: falData
+  imageBase64: base64
 });
 
   }  

@@ -101,7 +101,27 @@ const response = await fetch(
 
 const result = await response.json();
 
-return json(result);
+if (!response.ok) {
+
+  return json({
+    success: false,
+    status: response.status,
+    error: result.error || result
+  }, response.status);
+
+}
+
+return json({
+
+  success: true,
+
+  feature,
+
+  prompt,
+
+  response: result
+
+});
 
       return json({
         success: false,

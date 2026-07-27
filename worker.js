@@ -112,9 +112,21 @@ export default {
       if (request.method === "POST" && url.pathname === "/image/edit") {
         const { feature, prompt, imageBase64 } = body;
 
-        if (!feature) return error("feature is required", 400);
-        if (!prompt) return error("prompt is required", 400);
-        if (!imageBase64) return error("imageBase64 is required", 400);
+        // Validations
+if (!feature) {
+  return error("feature is required", 400);
+}
+
+if (!prompt) {
+  return error("prompt is required", 400);
+}
+
+if (
+  feature.toLowerCase() !== "generate" &&
+  !imageBase64
+) {
+  return error("imageBase64 is required", 400);
+}
 
         let finalPrompt = prompt;
         switch (feature.toLowerCase()) {

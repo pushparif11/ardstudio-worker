@@ -43,12 +43,19 @@ export default {
         const body = await request.json();
 
 const {
-  image,
+  feature,
   prompt,
-  action
+  imageBase64
 } = body;
 
-if (!image || !prompt || !action) {
+if (!feature || !prompt || !imageBase64) {
+
+  return json({
+    success: false,
+    error: "Missing required fields"
+  }, 400);
+
+}
 
   return json({
     success: false,
@@ -63,9 +70,9 @@ return json({
   message: "Request Accepted",
 
   data: {
-    action,
-    prompt
-  }
+  feature,
+  prompt
+}
 
 });
 

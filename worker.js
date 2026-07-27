@@ -23,6 +23,51 @@ try {
   }  
 
   // Image Edit Route  
+  if (
+  request.method === "POST" &&
+  url.pathname === "/prompt/improve"
+) {
+
+  const body = await request.json();
+
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-4.1-mini",
+        messages: [
+          {
+            role: "system",
+            content: "Improve image generation prompts."
+          },
+          {
+            role: "user",
+            content: body.prompt
+          }
+        ]
+      })
+    }
+  );
+
+  if (!response.ok) {
+    return error("OpenRouter Error", response.status);
+  }
+
+  const data = await response.json();
+
+  return json({
+    success: true,
+    prompt:
+      data.choices?.[0]?.message?.content ??
+      body.prompt
+  });
+
+}
   if (  
     request.method === "POST" &&  
     url.pathname === "/image/edit"  

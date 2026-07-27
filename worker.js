@@ -1,28 +1,37 @@
+// =======================================================
+// ARD Studio Backend
+// Production Worker
+// Part 1A
+// =======================================================
+
 export default {
-  async fetch(request) {
 
-    if (request.method === "GET") {
-      return Response.json({
-        success: true,
-        message: "ARD Studio Backend Running"
-      });
-    }
+  async fetch(request, env, ctx) {
 
-    if (request.method !== "POST") {
-      return Response.json(
-        { success: false, error: "Method Not Allowed" },
-        { status: 405 }
-      );
-    }
+    try {
 
-    const body = await request.json();
+      if (request.method === "OPTIONS") {
 
-    return Response.json({
-      success: true,
-      feature: body.feature,
-      prompt: body.prompt,
-      imageBase64: body.imageBase64
-    });
-  }
-}
-//update
+        return new Response(null, {
+          headers: corsHeaders()
+        });
+
+      }
+
+      const url = new URL(request.url);
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/"
+      ) {
+
+        return json({
+
+          success: true,
+          backend: "ARD Studio",
+          version: "2.0",
+          status: "Running"
+
+        });
+
+      }

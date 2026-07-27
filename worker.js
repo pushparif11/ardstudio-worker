@@ -261,12 +261,10 @@ return json({
 
 }  
 
-  return error(  
-    e.message || "Internal Server Error",  
-    500  
-  );  
-
-}
+  return error(
+  e.message || "Internal Server Error",
+  500
+);
 
 }
 };

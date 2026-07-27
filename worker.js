@@ -1,6 +1,6 @@
 export default {
   async fetch(request, env) {
-    // CORS Headers Handled Here
+    // CORS  
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: corsHeaders()
@@ -8,8 +8,6 @@ export default {
     }
 
     const controller = new AbortController();
-    
-    // Timeout set to 60 seconds
     const timeout = setTimeout(() => {
       controller.abort();
     }, 60000);
@@ -17,7 +15,7 @@ export default {
     try {
       const url = new URL(request.url);
 
-      // 1. Health Check Route
+      // Health Check Route (Root URL ke liye)
       if (request.method === "GET" && url.pathname === "/") {
         return json({
           success: true,
@@ -31,7 +29,6 @@ export default {
         });
       }
 
-      // POST Requests ke liye JSON body ek hi baar parse karenge taaki duplicate code na ho
       let body = null;
       if (request.method === "POST") {
         try {
@@ -41,10 +38,10 @@ export default {
         }
       }
 
-      // 2. Chat Route
+      // Chat Route
       if (request.method === "POST" && url.pathname === "/chat") {
         if (!body.messages || !Array.isArray(body.messages)) {
-          return error("messages is required and must be an array", 400);
+          return error("messages is required", 400);
         }
 
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -55,7 +52,7 @@ export default {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: "openai/gpt-4o-mini", // Corrected model name
+            model: "openai/gpt-4o-mini",
             messages: body.messages
           })
         });
@@ -72,10 +69,10 @@ export default {
         });
       }
 
-      // 3. Prompt Improve Route
+      // Prompt Improve Route
       if (request.method === "POST" && url.pathname === "/prompt/improve") {
         if (!body.prompt || typeof body.prompt !== "string") {
-          return error("prompt is required and must be a string", 400);
+          return error("prompt is required", 400);
         }
 
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -111,17 +108,15 @@ export default {
         });
       }
 
-      // 4. Image Edit Route
+      // Image Edit Route
       if (request.method === "POST" && url.pathname === "/image/edit") {
         const { feature, prompt, imageBase64 } = body;
 
-        // Validations
         if (!feature) return error("feature is required", 400);
         if (!prompt) return error("prompt is required", 400);
         if (!imageBase64) return error("imageBase64 is required", 400);
 
         let finalPrompt = prompt;
-
         switch (feature.toLowerCase()) {
           case "remove_background":
             finalPrompt = "Remove the background completely and preserve the subject exactly.";
@@ -178,10 +173,9 @@ export default {
         const outputImage = falData.images?.[0]?.url;
 
         if (!outputImage) {
-          return error("Edited image not found in Fal API response", 500);
+          return error("Edited image not found", 500);
         }
 
-        // Fetch Edited Image and Convert to Base64
         const imageResponse = await fetch(outputImage, { signal: controller.signal });
         if (!imageResponse.ok) {
           return error("Failed to download edited image", 500);
@@ -202,20 +196,18 @@ export default {
         });
       }
 
-      // If no route matched
       return error("Route not found", 404);
 
     } catch (e) {
       console.error(e);
       return error(e?.message || "Internal Server Error", 500);
     } finally {
-      // Clear timeout in finally block so it always runs properly
       clearTimeout(timeout);
     }
   }
 };
 
-// Helper Functions
+// --- Helper Functions ---
 function json(data) {
   return new Response(JSON.stringify(data), {
     headers: {

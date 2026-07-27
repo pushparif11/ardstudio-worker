@@ -22,7 +22,44 @@ try {
     });  
   }  
 
-  // Image Edit Route  
+  // Image Edit Route 
+  if (
+  request.method === "POST" &&
+  url.pathname === "/chat"
+) {
+
+  const body = await request.json();
+
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-4.1-mini",
+        messages: body.messages
+      })
+    }
+  );
+
+  if (!response.ok) {
+    const err = await response.text();
+
+    return error(err, response.status);
+  }
+
+  const data = await response.json();
+
+  return json({
+    success: true,
+    reply:
+      data.choices?.[0]?.message?.content ?? ""
+  });
+
+}
   if (
   request.method === "POST" &&
   url.pathname === "/prompt/improve"

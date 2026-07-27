@@ -37,6 +37,11 @@ services: {
 ) {
 
   const body = await request.json();
+    const {
+  feature,
+  prompt,
+  imageBase64
+} = body;
 
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",

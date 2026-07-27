@@ -9,7 +9,11 @@ if (request.method === "OPTIONS") {
 }  
 
 try {  
+const controller = new AbortController();
 
+const timeout = setTimeout(() => {
+  controller.abort();
+}, 60000);
   const url = new URL(request.url);  
 
   // Health Check  
@@ -18,7 +22,11 @@ try {
       success: true,  
       app: "ARD Studio API",  
       version: "2.0.0",  
-      status: "online"  
+      status: "online",
+services: {
+  fal: !!env.FAL_API_KEY,
+  openrouter: !!env.OPENROUTER_API_KEY
+}  
     });  
   }  
 

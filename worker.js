@@ -42,11 +42,17 @@ export default {
 
         const body = await request.json();
 
-const {
-  feature,
-  prompt,
-  imageBase64
-} = body;
+const OPENROUTER_API_KEY =
+  env.OPENROUTER_API_KEY;
+
+if (!OPENROUTER_API_KEY) {
+
+  return json({
+    success: false,
+    error: "OpenRouter API Key Missing"
+  }, 500);
+
+}
 
 if (!feature || !prompt || !imageBase64) {
 

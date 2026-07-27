@@ -279,8 +279,6 @@ return json({
   );
 }
 
-};
-
 function json(data) {
 return new Response(
 JSON.stringify(data),

@@ -40,13 +40,34 @@ export default {
         url.pathname === "/image/edit"
       ) {
 
-        return json({
-          success: true,
-          message: "Route Found",
-          endpoint: "/image/edit"
-        });
+        const body = await request.json();
 
-      }
+const {
+  image,
+  prompt,
+  action
+} = body;
+
+if (!image || !prompt || !action) {
+
+  return json({
+    success: false,
+    error: "Missing required fields"
+  }, 400);
+
+}
+
+return json({
+
+  success: true,
+  message: "Request Accepted",
+
+  data: {
+    action,
+    prompt
+  }
+
+});
 
       return json({
         success: false,

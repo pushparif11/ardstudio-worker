@@ -35,3 +35,33 @@ export default {
         });
 
       }
+      if (
+        request.method === "POST" &&
+        url.pathname === "/image/edit"
+      ) {
+
+        return json({
+          success: true,
+          message: "Route Found",
+          endpoint: "/image/edit"
+        });
+
+      }
+
+      return json({
+        success: false,
+        error: "Route Not Found"
+      }, 404);
+
+    } catch (error) {
+
+      return json({
+        success: false,
+        error: error.message
+      }, 500);
+
+    }
+
+  }
+
+}

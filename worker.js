@@ -70,17 +70,38 @@ if (!feature || !prompt || !imageBase64) {
 
 }
 
-return json({
+const requestData = {
 
-  success: true,
-  message: "Request Accepted",
+  model: "openai/gpt-4.1-mini",
 
-  data: {
-  feature,
-  prompt
-}
+  messages: [
+    {
+      role: "user",
+      content:
+        `Feature: ${feature}
+Prompt: ${prompt}`
+    }
+  ]
 
-});
+};
+
+const response = await fetch(
+  "https://openrouter.ai/api/v1/chat/completions",
+  {
+    method: "POST",
+    headers: {
+      "Authorization":
+        `Bearer ${OPENROUTER_API_KEY}`,
+      "Content-Type":
+        "application/json"
+    },
+    body: JSON.stringify(requestData)
+  }
+);
+
+const result = await response.json();
+
+return json(result);
 
       return json({
         success: false,

@@ -242,7 +242,16 @@ return json({
 
   return error("Route not found", 404);  
 
-} catch (e) {  
+} catch (e) {
+
+  console.error(e);
+
+  return error(
+    e?.message || "Internal Server Error",
+    500
+  );
+
+}  
 
   return error(  
     e.message || "Internal Server Error",  

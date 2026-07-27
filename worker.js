@@ -36,11 +36,48 @@ try {
       return error("Invalid JSON", 400);  
     }  
 
-    const {  
-      feature,  
-      prompt,  
-      imageBase64  
-    } = body;  
+    let finalPrompt = prompt;
+
+switch (feature.toLowerCase()) {
+
+  case "remove_background":
+    finalPrompt =
+      "Remove the background completely and preserve the subject exactly.";
+    break;
+
+  case "remove_object":
+    finalPrompt =
+      `Remove the selected object. ${prompt}`;
+    break;
+
+  case "replace_object":
+    finalPrompt =
+      `Replace the selected object. ${prompt}`;
+    break;
+
+  case "face_enhance":
+    finalPrompt =
+      "Enhance the face naturally, preserve identity, improve skin details and sharpness.";
+    break;
+
+  case "upscale":
+    finalPrompt =
+      "Upscale image to high quality with maximum details.";
+    break;
+
+  case "enhance":
+    finalPrompt =
+      "Enhance image quality, lighting, colors and sharpness while preserving identity.";
+    break;
+
+  case "expand":
+    finalPrompt =
+      `Outpaint image naturally. ${prompt}`;
+    break;
+
+  default:
+    finalPrompt = prompt;
+}  
 
     if (!feature)  
       return error("feature is required", 400);  

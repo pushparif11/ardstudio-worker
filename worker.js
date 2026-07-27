@@ -178,8 +178,10 @@ if (
 
         if (!falResponse.ok) {
           const msg = await falResponse.text();
-          return error(`Fal Error: ${msg}`, falResponse.status);
-        }
+          console.log("FAL STATUS:", falResponse.status);
+console.log("FAL RESPONSE:", msg);
+
+return error(`Fal Error: ${msg}`, falResponse.status);
 
         const falData = await falResponse.json();
         const outputImage = falData.images?.[0]?.url;

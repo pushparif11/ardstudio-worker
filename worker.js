@@ -23,9 +23,10 @@ export default {
           version: "2.0.0",
           status: "online",
           services: {
-            fal: !!env.FAL_API_KEY,
-            openrouter: !!env.OPENROUTER_API_KEY
-          }
+  openrouter: !!env.OPENROUTER_API_KEY,
+  huggingface: !!env.HF_API_TOKEN,
+  cloudinary: !!env.CLOUDINARY_CLOUD_NAME
+}
         });
       }
 

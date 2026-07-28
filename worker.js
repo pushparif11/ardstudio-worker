@@ -166,11 +166,27 @@ if (request.method === "POST" && url.pathname === "/image/edit") {
 
   const imageUrl = await uploadToCloudinary(imageDataUri, env);
 
+const imageBuffer = await hfRequest(
+  HF_MODELS.FILL,
+  {
+    inputs: finalPrompt,
+    image: imageUrl
+  },
+  env
+);
+
+const bytes = new Uint8Array(imageBuffer);
+
+let binary = "";
+for (const b of bytes) {
+  binary += String.fromCharCode(b);
+}
+
+const imageBase64 = btoa(binary);
+
 return json({
   success: true,
-  feature,
-  prompt: finalPrompt,
-  imageUrl: imageUrl
+  imageBase64
 });
 }
       
@@ -255,4 +271,26 @@ async function uploadToCloudinary(imageDataUri, env) {
   const data = await response.json();
 
   return data.secure_url;
+}
+           // 👇 इसके ठीक नीचे Paste करो
+
+async function hfRequest(model, payload, env) {
+
+  const response = await fetch(
+    `https://api-inference.huggingface.co/models/${model}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.HF_API_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return await response.arrayBuffer();
 }

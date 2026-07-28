@@ -160,33 +160,7 @@ if (
           ? imageBase64 
           : `data:image/png;base64,${imageBase64}`;
 
-        const falResponse = await fetch("https://fal.run/fal-ai/gpt-image-1.5/edit", {
-          method: "POST",
-          signal: controller.signal,
-          headers: {
-            "Authorization": `Key ${env.FAL_API_KEY}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            prompt: finalPrompt,
-            image_urls: [imageDataUri],
-            image_size: "auto",
-            quality: "high",
-            input_fidelity: "high",
-            sync_mode: true
-          })
-        });
-
-        if (!falResponse.ok) {
-  const msg = await falResponse.text();
-
-  console.log("FAL STATUS:", falResponse.status);
-  console.log("FAL RESPONSE:", msg);
-
-  return error(`Fal Error: ${msg}`, falResponse.status);
-}
-
-const falData = await falResponse.json();
+        return error("Patch 4 pending. FAL removed successfully.", 501);
         const outputImage = falData.images?.[0]?.url;
 
         if (!outputImage) {

@@ -99,8 +99,10 @@ export default {
         });
 
         if (!response.ok) {
-          return error("OpenRouter Error", response.status);
-        }
+    const msg = await response.text();
+    console.error("Cloudinary Error:", msg);
+    throw new Error(msg);
+}
 
         const data = await response.json();
         return json({

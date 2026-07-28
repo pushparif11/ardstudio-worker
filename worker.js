@@ -110,82 +110,63 @@ export default {
       }
 
       // Image Edit Route
-      if (request.method === "POST" && url.pathname === "/image/edit") {
-        const { feature, prompt, imageBase64 } = body;
+if (request.method === "POST" && url.pathname === "/image/edit") {
+  const { feature, prompt, imageBase64 } = body;
 
-        // Validations
-if (!feature) {
-  return error("feature is required", 400);
+  if (!feature) {
+    return error("feature is required", 400);
+  }
+
+  if (!prompt) {
+    return error("prompt is required", 400);
+  }
+
+  if (
+    feature.toLowerCase() !== "generate" &&
+    !imageBase64
+  ) {
+    return error("imageBase64 is required", 400);
+  }
+
+  let finalPrompt = prompt;
+
+  switch (feature.toLowerCase()) {
+    case "remove_background":
+      finalPrompt = "Remove the background completely and preserve the subject exactly.";
+      break;
+
+    case "remove_object":
+      finalPrompt = `Remove the selected object. ${prompt}`;
+      break;
+
+    case "replace_object":
+      finalPrompt = `Replace the selected object. ${prompt}`;
+      break;
+
+    case "face_enhance":
+      finalPrompt = "Enhance the face naturally, preserve identity.";
+      break;
+
+    case "upscale":
+      finalPrompt = "Upscale image to high quality.";
+      break;
+
+    case "enhance":
+      finalPrompt = "Enhance image quality while preserving identity.";
+      break;
+
+    case "expand":
+      finalPrompt = `Outpaint image naturally. ${prompt}`;
+      break;
+  }
+
+  const imageDataUri = imageBase64.startsWith("data:")
+    ? imageBase64
+    : `data:image/png;base64,${imageBase64}`;
+
+  return error("Patch 4: Image pipeline not connected yet.", 501);
 }
-
-if (!prompt) {
-  return error("prompt is required", 400);
-}
-
-if (
-  feature.toLowerCase() !== "generate" &&
-  !imageBase64
-) {
-  return error("imageBase64 is required", 400);
-}
-
-        let finalPrompt = prompt;
-        switch (feature.toLowerCase()) {
-          case "remove_background":
-            finalPrompt = "Remove the background completely and preserve the subject exactly.";
-            break;
-          case "remove_object":
-            finalPrompt = `Remove the selected object. ${prompt}`;
-            break;
-          case "replace_object":
-            finalPrompt = `Replace the selected object. ${prompt}`;
-            break;
-          case "face_enhance":
-            finalPrompt = "Enhance the face naturally, preserve identity, improve skin details and sharpness.";
-            break;
-          case "upscale":
-            finalPrompt = "Upscale image to high quality with maximum details.";
-            break;
-          case "enhance":
-            finalPrompt = "Enhance image quality, lighting, colors and sharpness while preserving identity.";
-            break;
-          case "expand":
-            finalPrompt = `Outpaint image naturally. ${prompt}`;
-            break;
-          default:
-            finalPrompt = prompt;
-        }
-
-        const imageDataUri = imageBase64.startsWith("data:") 
-          ? imageBase64 
-          : `data:image/png;base64,${imageBase64}`;
-
-        return error("Patch 4 pending. FAL removed successfully.", 501);
-        const outputImage = falData.images?.[0]?.url;
-
-        if (!outputImage) {
-          return error("Edited image not found", 500);
-        }
-
-        const imageResponse = await fetch(outputImage, { signal: controller.signal });
-        if (!imageResponse.ok) {
-          return error("Failed to download edited image", 500);
-        }
-
-        const imageBuffer = await imageResponse.arrayBuffer();
-        const bytes = new Uint8Array(imageBuffer);
-        
-        let binary = "";
-        for (const b of bytes) {
-          binary += String.fromCharCode(b);
-        }
-        const base64 = btoa(binary);
-
-        return json({
-          success: true,
-          imageBase64: base64
-        });
-      }
+      
 
       return error("Route not found", 404);
 

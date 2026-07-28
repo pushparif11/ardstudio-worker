@@ -1,6 +1,6 @@
 // ======================================================
-// ARD STUDIO AI WORKER - FINAL FIXED CODE
-// No More HTTP 400/404 Errors (Auto Base64 Conversion)
+// ARD STUDIO AI WORKER - FINAL ROBUST CODE
+// Fixes Missing Image Parameter Error Automatically
 // URL: https://ardstudio-api.mohammadarifshaikh05.workers.dev
 // ======================================================
 
@@ -69,25 +69,23 @@ function successResponse(data, status = 200) {
   return new Response(JSON.stringify({ success: true, data }), { status, headers: CORS_HEADERS });
 }
 
-// NOTE: Changed default error status to 200 temporarily so your app 
-// shows the actual JSON error message instead of a generic "HTTP 400" toast
 function errorResponse(message, status = 200) {
   return new Response(JSON.stringify({ success: false, error: message }), { status, headers: CORS_HEADERS });
 }
 
 // ======================================================
-// VALIDATIONS
+// SMART IMAGE EXTRACTOR (FIXES MISSING PARAM ERROR)
 // ======================================================
-function requireImage(body) {
-  if (!body || typeof body.image !== "string" || body.image.trim() === "") {
-    throw new Error("Image parameter is missing in the request payload."); 
+function extractImage(body) {
+  if (!body) throw new Error("Request body is empty.");
+  
+  // Checks all possible key names your app might be sending
+  const imgData = body.image || body.imageUrl || body.img || body.file || body.image_url;
+  
+  if (!imgData || typeof imgData !== "string" || imgData.trim() === "") {
+    throw new Error("Image parameter is missing in the request payload.");
   }
-}
-
-function requireMask(body) {
-  if (!body.mask || typeof body.mask !== "string" || body.mask.trim() === "") {
-    throw new Error("Mask image is required for this specific operation.");
-  }
+  return imgData;
 }
 
 // ======================================================
@@ -116,15 +114,12 @@ function arrayBufferToBase64(buffer) {
   return btoa(binary);
 }
 
-// THIS FIXES THE 400 ERROR: Downloads URL and converts to Base64 for Hugging Face
 async function getImageBase64(input) {
   if (!input) return null;
-  // If it's already a base64 string
   if (input.startsWith("data:image") || input.length > 2000) {
     if (input.includes(",")) return input.split(",")[1];
     return input;
   }
-  // If it's a URL, download and convert it
   try {
     const response = await fetchWithTimeout(input, { method: "GET" }); 
     if (!response.ok) throw new Error(`HTTP ${response.status}`); 
@@ -202,7 +197,6 @@ async function callAiService(modelUrl, payload, env) {
        if (errJson.error) errMsg = errJson.error;
     } catch(e) {}
     
-    // If model is loading, Hugging Face returns 503
     if (response.status === 503) {
         throw new Error(`AI Model is currently loading. Please try again in 30 seconds.`);
     }
@@ -231,27 +225,24 @@ async function processAndUpload(endpointUrl, payload, env) {
 }
 
 // ======================================================
-// AI FEATURES (UPDATED TO PREVENT HF 400 ERRORS)
+// AI FEATURES
 // ======================================================
 
 async function executeExpand(body, env) {
-  requireImage(body);
-  // URL to Base64 conversion (Prevents HF HTTP 400)
-  const base64Img = await getImageBase64(body.image);
+  const rawImage = extractImage(body);
+  const base64Img = await getImageBase64(rawImage);
   
   const promptText = body.prompt || body.expand_prompt || "expand the background seamlessly, highly detailed";
   const payload = { inputs: promptText, image: base64Img };
   
-  // Using Instruct-Pix2Pix because it DOES NOT require a mask (prevents 400 error)
   const modelUrl = "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix"; 
   const finalImage = await processAndUpload(modelUrl, payload, env);
   return successResponse({ image: finalImage });
 }
 
 async function executeRemoveObject(body, env) {
-  requireImage(body);
-  requireMask(body);
-  const base64Img = await getImageBase64(body.image);
+  const rawImage = extractImage(body);
+  const base64Img = await getImageBase64(rawImage);
   const base64Mask = await getImageBase64(body.mask);
   
   const payload = { inputs: "background, clean fill", image: base64Img, mask_image: base64Mask };
@@ -261,9 +252,8 @@ async function executeRemoveObject(body, env) {
 }
 
 async function executeReplace(body, env) {
-  requireImage(body);
-  requireMask(body);
-  const base64Img = await getImageBase64(body.image);
+  const rawImage = extractImage(body);
+  const base64Img = await getImageBase64(rawImage);
   const base64Mask = await getImageBase64(body.mask);
   
   const payload = { inputs: body.prompt || "replace object", image: base64Img, mask_image: base64Mask };
@@ -273,8 +263,8 @@ async function executeReplace(body, env) {
 }
 
 async function executeFilters(body, env) {
-  requireImage(body);
-  const base64Img = await getImageBase64(body.image);
+  const rawImage = extractImage(body);
+  const base64Img = await getImageBase64(rawImage);
   
   const payload = { inputs: body.style || "make it look cyberpunk", image: base64Img };
   const modelUrl = "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix"; 
@@ -283,8 +273,8 @@ async function executeFilters(body, env) {
 }
 
 async function executeUpscale(body, env) {
-  requireImage(body);
-  const base64Img = await getImageBase64(body.image);
+  const rawImage = extractImage(body);
+  const base64Img = await getImageBase64(rawImage);
   
   const payload = { inputs: base64Img };
   const modelUrl = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-x4-upscaler"; 
@@ -293,8 +283,8 @@ async function executeUpscale(body, env) {
 }
 
 async function executeEnhance(body, env) {
-  requireImage(body);
-  const base64Img = await getImageBase64(body.image);
+  const rawImage = extractImage(body);
+  const base64Img = await getImageBase64(rawImage);
   
   const payload = { inputs: "enhance, high resolution, 4k", image: base64Img };
   const modelUrl = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-refiner-1.0"; 
@@ -310,12 +300,11 @@ async function handlePost(path, request, env) {
   try {
     body = await request.json(); 
   } catch {
-    return errorResponse("Invalid JSON Payload. Ensure you are sending JSON data."); 
+    return errorResponse("Invalid JSON Payload format received."); 
   }
 
   try {
     switch (path) {
-      // Mapped your app's endpoint to executeExpand
       case "/image/edit": return await executeExpand(body, env); 
       case "/expand": return await executeExpand(body, env);
       case "/remove-object": return await executeRemoveObject(body, env);
@@ -326,7 +315,6 @@ async function handlePost(path, request, env) {
       default: return errorResponse(`Endpoint '${path}' Not Found`); 
     }
   } catch (error) {
-    // Shows the exact error reason inside the app instead of crashing
     return errorResponse(error.message);
   }
 }

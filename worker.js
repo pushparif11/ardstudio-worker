@@ -275,6 +275,8 @@ async function handlePost(path, request, env) {
 
   try {
     switch (path) {
+      // Yaha par /image/edit ko add kiya gaya hai
+      case "/image/edit": return await executeExpand(body, env); 
       case "/expand": return await executeExpand(body, env);
       case "/remove-object": return await executeRemoveObject(body, env);
       case "/replace": return await executeReplace(body, env);

@@ -164,7 +164,14 @@ if (request.method === "POST" && url.pathname === "/image/edit") {
     ? imageBase64
     : `data:image/png;base64,${imageBase64}`;
 
-  return error("Patch 4: Image pipeline not connected yet.", 501);
+  const imageUrl = await uploadToCloudinary(imageDataUri, env);
+
+return json({
+  success: true,
+  feature,
+  prompt: finalPrompt,
+  imageUrl: imageUrl
+});
 }
       
 

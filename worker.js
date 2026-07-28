@@ -246,7 +246,7 @@ const HF_MODELS = {
   UPSCALE: "caidas/swin2SR-classical-sr-x2-64",
   ENHANCE: "timbrooks/instruct-pix2pix"
 };
-async function uploadToCloudinary(imageDataUri, env) {
+
 async function uploadToCloudinary(imageDataUri, env) {
 
   const timestamp = Math.floor(Date.now() / 1000);

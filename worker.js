@@ -221,3 +221,31 @@ const HF_MODELS = {
   UPSCALE: "caidas/swin2SR-classical-sr-x2-64",
   ENHANCE: "timbrooks/instruct-pix2pix"
 };
+async function uploadToCloudinary(imageDataUri, env) {
+
+  const base64 = imageDataUri.replace(/^data:image\/\w+;base64,/, "");
+
+  const form = new FormData();
+  form.append("file", `data:image/png;base64,${base64}`);
+
+  const auth = btoa(`${env.CLOUDINARY_API_KEY}:${env.CLOUDINARY_API_SECRET}`);
+
+  const response = await fetch(
+    `${cloudinaryBase(env)}/image/upload`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${auth}`
+      },
+      body: form
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  const data = await response.json();
+
+  return data.secure_url;
+}

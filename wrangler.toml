@@ -1,9 +1,8 @@
 name = "ardstudio-api"
 main = "src/index.js"
-compatibility_date = "2025-01-01"
+compatibility_date = "2026-07-29"
 
-[vars]
-APP_NAME = "ARD Studio AI"
+workers_dev = true
 
-# Secret command:
-# wrangler secret put OPENAI_API_KEY
+[observability]
+enabled = true

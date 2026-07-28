@@ -182,11 +182,11 @@ for (const b of bytes) {
   binary += String.fromCharCode(b);
 }
 
-const imageBase64 = btoa(binary);
-
+const outputImageBase64 = btoa(binary);
+  
 return json({
   success: true,
-  imageBase64
+  imageBase64: outputImageBase64
 });
 }
       

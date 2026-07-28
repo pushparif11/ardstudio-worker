@@ -1,6 +1,6 @@
 // ======================================================
-// ARD STUDIO AI WORKER - FINAL ROBUST CODE
-// Fixes Missing Image Parameter Error Automatically
+// ARD STUDIO AI WORKER - ULTIMATE BULLETPROOF CODE
+// Handles JSON, FormData, and all Image Key variations
 // URL: https://ardstudio-api.mohammadarifshaikh05.workers.dev
 // ======================================================
 
@@ -74,18 +74,51 @@ function errorResponse(message, status = 200) {
 }
 
 // ======================================================
-// SMART IMAGE EXTRACTOR (FIXES MISSING PARAM ERROR)
+// ADVANCED PAYLOAD PARSER (SUPPORTS JSON & FORMDATA)
 // ======================================================
-function extractImage(body) {
-  if (!body) throw new Error("Request body is empty.");
-  
-  // Checks all possible key names your app might be sending
-  const imgData = body.image || body.imageUrl || body.img || body.file || body.image_url;
-  
-  if (!imgData || typeof imgData !== "string" || imgData.trim() === "") {
-    throw new Error("Image parameter is missing in the request payload.");
+async function parseRequestData(request) {
+  let bodyData = {};
+  const contentType = request.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    try {
+      bodyData = await request.json();
+    } catch (e) {
+      throw new Error("Invalid JSON body format.");
+    }
+  } else if (contentType.includes("multipart/form-data") || contentType.includes("application/x-www-form-urlencoded")) {
+    try {
+      const formData = await request.formData();
+      for (const [key, value] of formData.entries()) {
+        bodyData[key] = value;
+      }
+    } catch (e) {
+      throw new Error("Failed to parse form data.");
+    }
+  } else {
+    // Fallback try parsing as JSON anyway
+    try {
+      bodyData = await request.json();
+    } catch (e) {
+      bodyData = {};
+    }
   }
-  return imgData;
+
+  // Smart Image Key Detection across all possible app formats
+  const imageField = bodyData.image || bodyData.imageUrl || bodyData.img || bodyData.file || bodyData.image_url;
+  
+  if (!imageField) {
+    // If no image found in keys, check if body itself is a string/url
+    if (typeof bodyData === "string" && bodyData.trim() !== "") {
+      bodyData.image = bodyData;
+    } else {
+      throw new Error("Image parameter is missing in the request payload.");
+    }
+  } else {
+    bodyData.image = imageField;
+  }
+
+  return bodyData;
 }
 
 // ======================================================
@@ -116,6 +149,11 @@ function arrayBufferToBase64(buffer) {
 
 async function getImageBase64(input) {
   if (!input) return null;
+  if (typeof input !== "string") {
+    // If it's a File/Blob object from FormData
+    const buffer = await input.arrayBuffer();
+    return arrayBufferToBase64(buffer);
+  }
   if (input.startsWith("data:image") || input.length > 2000) {
     if (input.includes(",")) return input.split(",")[1];
     return input;
@@ -218,7 +256,7 @@ async function callAiService(modelUrl, payload, env) {
 
 async function processAndUpload(endpointUrl, payload, env) {
   const result = await callAiService(endpointUrl, payload, env);
-  if (result.includes("cloudinary.com")) return result;
+  if (typeof result === "string" && result.includes("cloudinary.com")) return result;
   
   const imageBuffer = await downloadImage(result);
   return await uploadImage(imageBuffer, env);
@@ -229,9 +267,7 @@ async function processAndUpload(endpointUrl, payload, env) {
 // ======================================================
 
 async function executeExpand(body, env) {
-  const rawImage = extractImage(body);
-  const base64Img = await getImageBase64(rawImage);
-  
+  const base64Img = await getImageBase64(body.image);
   const promptText = body.prompt || body.expand_prompt || "expand the background seamlessly, highly detailed";
   const payload = { inputs: promptText, image: base64Img };
   
@@ -241,52 +277,47 @@ async function executeExpand(body, env) {
 }
 
 async function executeRemoveObject(body, env) {
-  const rawImage = extractImage(body);
-  const base64Img = await getImageBase64(rawImage);
+  const base64Img = await getImageBase64(body.image);
   const base64Mask = await getImageBase64(body.mask);
-  
   const payload = { inputs: "background, clean fill", image: base64Img, mask_image: base64Mask };
+  
   const modelUrl = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-inpainting"; 
   const finalImage = await processAndUpload(modelUrl, payload, env);
   return successResponse({ image: finalImage });
 }
 
 async function executeReplace(body, env) {
-  const rawImage = extractImage(body);
-  const base64Img = await getImageBase64(rawImage);
+  const base64Img = await getImageBase64(body.image);
   const base64Mask = await getImageBase64(body.mask);
-  
   const payload = { inputs: body.prompt || "replace object", image: base64Img, mask_image: base64Mask };
+  
   const modelUrl = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-inpainting"; 
   const finalImage = await processAndUpload(modelUrl, payload, env);
   return successResponse({ image: finalImage });
 }
 
 async function executeFilters(body, env) {
-  const rawImage = extractImage(body);
-  const base64Img = await getImageBase64(rawImage);
-  
+  const base64Img = await getImageBase64(body.image);
   const payload = { inputs: body.style || "make it look cyberpunk", image: base64Img };
+  
   const modelUrl = "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix"; 
   const finalImage = await processAndUpload(modelUrl, payload, env);
   return successResponse({ image: finalImage });
 }
 
 async function executeUpscale(body, env) {
-  const rawImage = extractImage(body);
-  const base64Img = await getImageBase64(rawImage);
-  
+  const base64Img = await getImageBase64(body.image);
   const payload = { inputs: base64Img };
+  
   const modelUrl = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-x4-upscaler"; 
   const finalImage = await processAndUpload(modelUrl, payload, env);
   return successResponse({ image: finalImage });
 }
 
 async function executeEnhance(body, env) {
-  const rawImage = extractImage(body);
-  const base64Img = await getImageBase64(rawImage);
-  
+  const base64Img = await getImageBase64(body.image);
   const payload = { inputs: "enhance, high resolution, 4k", image: base64Img };
+  
   const modelUrl = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-refiner-1.0"; 
   const finalImage = await processAndUpload(modelUrl, payload, env);
   return successResponse({ image: finalImage });
@@ -298,9 +329,9 @@ async function executeEnhance(body, env) {
 async function handlePost(path, request, env) {
   let body;
   try {
-    body = await request.json(); 
-  } catch {
-    return errorResponse("Invalid JSON Payload format received."); 
+    body = await parseRequestData(request);
+  } catch (error) {
+    return errorResponse(error.message); 
   }
 
   try {

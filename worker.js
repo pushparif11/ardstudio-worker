@@ -1,6 +1,6 @@
 // ======================================================
-// ARD STUDIO AI WORKER - FINAL TIMEOUT-PROOF VERSION
-// Bypasses Cloudflare 30s limit to stop "Network connection lost"
+// ARD STUDIO AI WORKER - REAL AI EXECUTION VERSION
+// Fully integrated with real Hugging Face AI processing
 // URL: https://ardstudio-api.mohammadarifshaikh05.workers.dev
 // ======================================================
 
@@ -22,6 +22,7 @@ const CORS_HEADERS = {
 
 const API_VERSION = "1.0.0";
 const APP_NAME = "ARD Studio AI Worker";
+const REQUEST_TIMEOUT = 115000; // 115 Seconds (Max safe limit for Cloudflare Workers)
 
 // ======================================================
 // MAIN REQUEST HANDLER
@@ -108,6 +109,19 @@ async function parseRequestData(request) {
 // ======================================================
 // UTILITIES
 // ======================================================
+async function fetchWithTimeout(url, options = {}, timeout = REQUEST_TIMEOUT) {
+  const controller = new AbortController(); 
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal }); 
+    clearTimeout(id); 
+    return response; 
+  } catch (e) {
+    clearTimeout(id); 
+    throw new Error(`AI request timed out or failed: ${e.message}`); 
+  }
+}
+
 function formatBase64ForAi(base64Input) {
   if (!base64Input) return "";
   let cleanBase64 = base64Input.trim();
@@ -118,51 +132,54 @@ function formatBase64ForAi(base64Input) {
 }
 
 // ======================================================
-// FAST TIMEOUT-SAFE AI HANDLER
+// REAL AI EXECUTION (HUGGING FACE)
 // ======================================================
 async function executeEdit(body, env) {
-  const originalImageBase64 = body.imageBase64 || body.image;
-  
-  // Try calling AI with a short 10-second timeout to avoid Cloudflare limits
-  try {
-    if (env.HF_API_TOKEN) {
-      const formattedImg = formatBase64ForAi(originalImageBase64);
-      const promptText = body.prompt || "enhance image, high quality";
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 9000); // 9 seconds hard limit for safety
-
-      const response = await fetch("https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${env.HF_API_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ inputs: promptText, image: formattedImg }),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("image/")) {
-           const buffer = await response.arrayBuffer();
-           let binary = '';
-           const bytes = new Uint8Array(buffer);
-           for (let i = 0; i < bytes.byteLength; i++) {
-             binary += String.fromCharCode(bytes[i]);
-           }
-           return successResponse(btoa(binary));
-        }
-      }
-    }
-  } catch (e) {
-    // If AI takes too long or fails, it falls back instantly to safe return below 
-    // so your app never gets a "Network connection lost" error.
+  if (!env.HF_API_TOKEN) {
+    throw new Error("Missing HF_API_TOKEN in Cloudflare environment secrets.");
   }
 
-  // Fallback: Instantly returns the original image back to the app so the UI succeeds smoothly without breaking
-  return successResponse(originalImageBase64);
+  const formattedImg = formatBase64ForAi(body.imageBase64 || body.image);
+  const promptText = body.prompt || "expand the background naturally with a realistic continuation, high quality, 4k";
+  
+  // Using Stable Diffusion Inpainting / Outpainting model which actually expands/modifies images
+  const modelUrl = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-inpainting";
+
+  const payload = {
+    inputs: promptText,
+    image: formattedImg
+  };
+
+  const response = await fetchWithTimeout(modelUrl, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${env.HF_API_TOKEN}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  }, REQUEST_TIMEOUT);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    if (response.status === 503) {
+      throw new Error("AI Model is currently loading on Hugging Face. Please try again in 20 seconds.");
+    }
+    throw new Error(`AI Provider Error (${response.status}): ${errorText}`);
+  }
+
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("image/")) {
+     const buffer = await response.arrayBuffer();
+     let binary = '';
+     const bytes = new Uint8Array(buffer);
+     for (let i = 0; i < bytes.byteLength; i++) {
+       binary += String.fromCharCode(bytes[i]);
+     }
+     return successResponse(btoa(binary));
+  }
+
+  const result = await response.json();
+  throw new Error(result.error || "AI did not return a valid image output.");
 }
 
 // ======================================================

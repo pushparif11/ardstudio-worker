@@ -247,30 +247,57 @@ const HF_MODELS = {
   ENHANCE: "timbrooks/instruct-pix2pix"
 };
 async function uploadToCloudinary(imageDataUri, env) {
+async function uploadToCloudinary(imageDataUri, env) {
 
-  const base64 = imageDataUri.replace(/^data:image\/\w+;base64,/, "");
+  const timestamp = Math.floor(Date.now() / 1000);
+
+  const base64 = imageDataUri.replace(
+    /^data:image\/\w+;base64,/,
+    ""
+  );
+
+  const signatureString =
+    `timestamp=${timestamp}${env.CLOUDINARY_API_SECRET}`;
+
+  const signature = await sha1(signatureString);
 
   const form = new FormData();
-  form.append("file", `data:image/png;base64,${base64}`);
 
-  const auth = btoa(`${env.CLOUDINARY_API_KEY}:${env.CLOUDINARY_API_SECRET}`);
+  form.append(
+    "file",
+    `data:image/png;base64,${base64}`
+  );
+
+  form.append(
+    "api_key",
+    env.CLOUDINARY_API_KEY
+  );
+
+  form.append(
+    "timestamp",
+    String(timestamp)
+  );
+
+  form.append(
+    "signature",
+    signature
+  );
 
   const response = await fetch(
     `${cloudinaryBase(env)}/image/upload`,
     {
       method: "POST",
-      headers: {
-        Authorization: `Basic ${auth}`
-      },
       body: form
     }
   );
 
+  const text = await response.text();
+
   if (!response.ok) {
-    throw new Error(await response.text());
+    throw new Error(text);
   }
 
-  const data = await response.json();
+  const data = JSON.parse(text);
 
   return data.secure_url;
 }
@@ -295,4 +322,17 @@ async function hfRequest(model, payload, env) {
   }
 
   return await response.arrayBuffer();
+}
+// 👇 इसके नीचे SHA1() COD करो
+
+async function sha1(text) {
+
+  const data = new TextEncoder().encode(text);
+
+  const hash = await crypto.subtle.digest("SHA-1", data);
+
+  return [...new Uint8Array(hash)]
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+
 }

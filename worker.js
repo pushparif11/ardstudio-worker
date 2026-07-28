@@ -255,3 +255,14 @@ function corsHeaders() {
     "Access-Control-Max-Age": "86400"
   };
 }
+// ---------- Cloudinary Helper ----------
+function cloudinaryBase(env) {
+  return `https://api.cloudinary.com/v1_1/${env.CLOUDINARY_CLOUD_NAME}`;
+}
+
+// ---------- Hugging Face Helper ----------
+const HF_MODELS = {
+  FILL: "black-forest-labs/FLUX.1-Fill-dev",
+  UPSCALE: "caidas/swin2SR-classical-sr-x2-64",
+  ENHANCE: "timbrooks/instruct-pix2pix"
+};

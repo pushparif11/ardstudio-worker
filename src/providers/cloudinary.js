@@ -1,18 +1,21 @@
-const CLOUD_NAME = "YOUR_CLOUD_NAME";
-
 export async function uploadToCloudinary(env, imageBase64) {
 
   const form = new FormData();
 
   form.append(
     "file",
-    `data:image/png;base64,${imageBase64}`
+    imageBase64.startsWith("data:")
+      ? imageBase64
+      : `data:image/png;base64,${imageBase64}`
   );
 
-  form.append("upload_preset", env.CLOUDINARY_UPLOAD_PRESET);
+  form.append(
+    "upload_preset",
+    env.CLOUDINARY_UPLOAD_PRESET
+  );
 
   const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+    `https://api.cloudinary.com/v1_1/${env.CLOUDINARY_CLOUD_NAME}/image/upload`,
     {
       method: "POST",
       body: form
@@ -20,7 +23,7 @@ export async function uploadToCloudinary(env, imageBase64) {
   );
 
   if (!response.ok) {
-    throw new Error("Cloudinary upload failed");
+    throw new Error(await response.text());
   }
 
   const json = await response.json();

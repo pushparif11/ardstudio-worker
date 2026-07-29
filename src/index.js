@@ -1,23 +1,20 @@
 import { handleRequest } from "./routes.js";
+import { error } from "./response.js";
 
 export default {
-  async fetch(request, env, ctx) {
+
+  async fetch(request, env) {
+
     try {
+
       return await handleRequest(request, env);
-    } catch (err) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: err.message || "Internal Server Error"
-        }),
-        {
-          status: 500,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Content-Type": "application/json"
-          }
-        }
-      );
+
+    } catch (e) {
+
+      return error(e.message || "Internal Server Error", 500);
+
     }
+
   }
+
 };

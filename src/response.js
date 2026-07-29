@@ -1,14 +1,14 @@
-import { CORS_HEADERS } from "./config.js";
+import { HEADERS } from "./config.js";
 
 export function success(data, status = 200) {
   return new Response(
     JSON.stringify({
       success: true,
-      ...data
+      data
     }),
     {
       status,
-      headers: CORS_HEADERS
+      headers: HEADERS
     }
   );
 }
@@ -21,7 +21,7 @@ export function error(message, status = 400) {
     }),
     {
       status,
-      headers: CORS_HEADERS
+      headers: HEADERS
     }
   );
 }

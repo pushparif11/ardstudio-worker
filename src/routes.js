@@ -1,52 +1,56 @@
+import { getBody, getImage, getPrompt } from "./utils.js";
 import { success, error } from "./response.js";
-import { requestJson, getImage, cleanBase64 } from "./utils.js";
-import { expandImage } from "./openai.js";
+import { DEFAULT_EXPAND_PROMPT } from "./config.js";
+
+import { expandImage } from "./services/expand.js";
+import { enhanceImage } from "./services/enhance.js";
+import { upscaleImage } from "./services/upscale.js";
+import { health } from "./services/health.js";
 
 export async function handleRequest(request, env) {
 
   if (request.method === "OPTIONS") {
-    return success({});
+    return new Response(null, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+      }
+    });
   }
 
   const url = new URL(request.url);
 
-  if (request.method === "GET") {
-
-    if (url.pathname === "/") {
-      return success({
-        app: "ARD Studio AI Worker",
-        status: "Running"
-      });
-    }
-
-    if (url.pathname === "/health") {
-      return success({
-        health: "OK"
-      });
-    }
-
-    return error("Route not found", 404);
+  // Health
+  if (request.method === "GET" && url.pathname === "/health") {
+    return success(await health());
   }
 
   if (request.method !== "POST") {
-    return error("Method not allowed", 405);
+    return error("Method Not Allowed", 405);
   }
 
-  const body = await requestJson(request);
+  const body = await getBody(request);
 
   const image = getImage(body);
+  const prompt = getPrompt(body, DEFAULT_EXPAND_PROMPT);
 
-  if (!image) {
-    return error("Image parameter is missing in the request payload.");
+  switch (url.pathname) {
+
+    case "/expand":
+      if (!image) return error("Image missing");
+      return success(await expandImage(env, image, prompt));
+
+    case "/enhance":
+      if (!image) return error("Image missing");
+      return success(await enhanceImage(env, image, prompt));
+
+    case "/upscale":
+      if (!image) return error("Image missing");
+      return success(await upscaleImage(env, image, prompt));
+
+    default:
+      return error("Endpoint Not Found", 404);
+
   }
-
-  const result = await expandImage(
-    env,
-    cleanBase64(image),
-    body.prompt
-  );
-
-  return success({
-    imageBase64: result
-  });
 }

@@ -1,19 +1,23 @@
-export async function requestJson(request) {
+export async function getBody(request) {
   try {
     return await request.json();
   } catch {
-    throw new Error("Invalid JSON payload.");
+    return {};
   }
 }
 
 export function getImage(body) {
   return (
-    body.imageBase64 ||
     body.image ||
+    body.imageBase64 ||
     body.imageUrl ||
     body.image_url ||
     null
   );
+}
+
+export function getPrompt(body, fallback) {
+  return body.prompt || fallback;
 }
 
 export function cleanBase64(base64) {

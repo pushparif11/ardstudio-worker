@@ -1,38 +1,39 @@
 const HF_API =
   "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
 
-export async function callHuggingFace(env, imageBase64, prompt) {
+export async function generateImage(env, prompt) {
+  if (!env.HUGGINGFACE_API_KEY) {
+    throw new Error("HUGGINGFACE_API_KEY missing");
+  }
 
   const response = await fetch(HF_API, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${env.HUGGINGFACE_API_KEY}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      Accept: "image/png"
     },
     body: JSON.stringify({
       inputs: prompt,
       parameters: {
         negative_prompt:
-          "low quality, blurry, distorted, cropped, watermark"
+          "low quality, blurry, watermark, text, logo, cropped, deformed",
+        num_inference_steps: 30,
+        guidance_scale: 7.5
       },
-      image: imageBase64
+      options: {
+        wait_for_model: true,
+        use_cache: false
+      }
     })
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text);
+    const errorText = await response.text();
+    throw new Error(`HuggingFace Error: ${errorText}`);
   }
 
-  const buffer = await response.arrayBuffer();
+  const imageBuffer = await response.arrayBuffer();
 
-  const bytes = new Uint8Array(buffer);
-
-  let binary = "";
-
-  for (const b of bytes) {
-    binary += String.fromCharCode(b);
-  }
-
-  return btoa(binary);
+  return imageBuffer;
 }

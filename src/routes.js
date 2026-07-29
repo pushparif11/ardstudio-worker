@@ -1,56 +1,36 @@
-import { getBody, getImage, getPrompt } from "./utils.js";
-import { success, error } from "./response.js";
-import { DEFAULT_EXPAND_PROMPT } from "./config.js";
-
-import { expandImage } from "./services/expand.js";
-import { enhanceImage } from "./services/enhance.js";
-import { upscaleImage } from "./services/upscale.js";
+import { expand } from "./services/expand.js";
 import { health } from "./services/health.js";
+import { error } from "./response.js";
 
 export async function handleRequest(request, env) {
+  const url = new URL(request.url);
 
+  // CORS
   if (request.method === "OPTIONS") {
     return new Response(null, {
+      status: 204,
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "*",
-        "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
       }
     });
   }
 
-  const url = new URL(request.url);
+  try {
+    // Health
+    if (url.pathname === "/health" && request.method === "GET") {
+      return health();
+    }
 
-  // Health
-  if (request.method === "GET" && url.pathname === "/health") {
-    return success(await health());
-  }
+    // AI Generate (temporary)
+    if (url.pathname === "/expand" && request.method === "POST") {
+      return await expand(request, env);
+    }
 
-  if (request.method !== "POST") {
-    return error("Method Not Allowed", 405);
-  }
+    return error("Route Not Found", 404);
 
-  const body = await getBody(request);
-
-  const image = getImage(body);
-  const prompt = getPrompt(body, DEFAULT_EXPAND_PROMPT);
-
-  switch (url.pathname) {
-
-    case "/expand":
-      if (!image) return error("Image missing");
-      return success(await expandImage(env, image, prompt));
-
-    case "/enhance":
-      if (!image) return error("Image missing");
-      return success(await enhanceImage(env, image, prompt));
-
-    case "/upscale":
-      if (!image) return error("Image missing");
-      return success(await upscaleImage(env, image, prompt));
-
-    default:
-      return error("Endpoint Not Found", 404);
-
+  } catch (e) {
+    return error(e.message || "Internal Server Error", 500);
   }
 }

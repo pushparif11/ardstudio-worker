@@ -10,24 +10,27 @@ export async function expand(request, env) {
     }
 
     const prompt =
-      body.prompt ||
+      (body.prompt || "").trim() ||
       "Expand the image naturally while preserving the original subject.";
 
-    const image = await editImage(
+    const imageBuffer = await editImage(
       env,
       body.image,
       prompt
     );
 
-    const base64 = btoa(
-      String.fromCharCode(...new Uint8Array(image))
-    );
+    const bytes = new Uint8Array(imageBuffer);
+
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
 
     return success({
-      image: base64
+      image: btoa(binary)
     });
 
   } catch (e) {
-    return error(e.message, 500);
+    return error(e.message || "Expand failed", 500);
   }
 }

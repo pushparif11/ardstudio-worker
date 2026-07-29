@@ -1,39 +1,26 @@
-const HF_API =
-  "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
+const API_URL =
+  "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-Kontext-dev";
 
-export async function generateImage(env, prompt) {
-  if (!env.HUGGINGFACE_API_KEY) {
-    throw new Error("HUGGINGFACE_API_KEY missing");
-  }
-
-  const response = await fetch(HF_API, {
+export async function editImage(env, imageBase64, prompt) {
+  const response = await fetch(API_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${env.HUGGINGFACE_API_KEY}`,
-      "Content-Type": "application/json",
-      Accept: "image/png"
+      "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      inputs: prompt,
+      inputs: imageBase64,
       parameters: {
-        negative_prompt:
-          "low quality, blurry, watermark, text, logo, cropped, deformed",
-        num_inference_steps: 30,
-        guidance_scale: 7.5
-      },
-      options: {
-        wait_for_model: true,
-        use_cache: false
+        prompt,
+        guidance_scale: 3.5,
+        num_inference_steps: 28
       }
     })
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`HuggingFace Error: ${errorText}`);
+    throw new Error(await response.text());
   }
 
-  const imageBuffer = await response.arrayBuffer();
-
-  return imageBuffer;
+  return await response.arrayBuffer();
 }

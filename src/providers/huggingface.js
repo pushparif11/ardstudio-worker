@@ -1,5 +1,5 @@
 const API_URL =
-  "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-Kontext-dev";
+  "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-inpainting";
 
 export async function editImage(env, imageBase64, prompt) {
   const response = await fetch(API_URL, {
@@ -9,11 +9,9 @@ export async function editImage(env, imageBase64, prompt) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      inputs: imageBase64,
-      parameters: {
-        prompt,
-        guidance_scale: 3.5,
-        num_inference_steps: 28
+      inputs: {
+        image: imageBase64,
+        prompt: prompt
       }
     })
   });

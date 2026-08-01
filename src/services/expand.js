@@ -1,4 +1,4 @@
-import { editImage } from "../providers/huggingface.js";
+import { editImage } from "../providers/cloudflare.js";
 import { success, error } from "../response.js";
 
 export async function expand(request, env) {

@@ -31,6 +31,19 @@ export async function expand(request, env) {
     });
 
   } catch (e) {
-    return error(e.message || "Expand failed", 500);
-  }
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: e.message,
+      stack: String(e.stack)
+    }),
+    {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      }
+    }
+  );
+}
 }

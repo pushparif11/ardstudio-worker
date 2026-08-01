@@ -10,3 +10,7 @@ enabled = true
 [vars]
 APP_NAME = "ARD Studio API"
 API_VERSION = "2.0.0"
+
+
+[ai]
+binding = "AI"

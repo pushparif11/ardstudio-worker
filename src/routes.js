@@ -22,7 +22,9 @@ export async function handleRequest(request, env) {
     if (url.pathname === "/health" && request.method === "GET") {
       return health();
     }
-
+if (url.pathname === "/expand" && request.method === "GET") {
+  return new Response("EXPAND ROUTE OK");
+}
     // AI Generate (temporary)
     if (url.pathname === "/expand" && request.method === "POST") {
       return await expand(request, env);
